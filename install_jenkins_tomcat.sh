@@ -52,10 +52,7 @@ git --version
 
 # Step 7: Install Maven
 echo "[7/9] Installing Maven..."
-sudo wget -O /etc/yum.repos.d/epel-apache-maven.repo \
-  https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo
-sudo sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
-sudo yum install -y apache-maven
+sudo yum install -y maven
 mvn -version
 
 # Step 8 (conditional): Install and configure Tomcat 11
