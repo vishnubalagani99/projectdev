@@ -93,7 +93,7 @@ if __name__ == "__main__":
         user_input = input("\nDo you want to delete all EC2 instances? (yes/no): ").strip().lower()
         
         if user_input == 'yes':
-            # Get all instance IDs to delete
+            # Get all instance IDs to deletedx
             instance_ids = [instance['InstanceId'] for instance in instances]
             delete_ec2_instances(instance_ids, instances)
         else:
