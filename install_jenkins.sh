@@ -10,16 +10,19 @@ set -e  # Exit on any error
 echo "[1/9] Updating system..."
 sudo yum update -y
 
-# Step 2: Install Java 21 (Amazon Corretto)
+# Step 2: Add Corretto repo and Install Java 21
 echo "[2/9] Installing Java 21 (Amazon Corretto)..."
-sudo yum install -y java-21-amazon-corretto-headless
-java -version
+sudo rpm --import https://yum.corretto.aws/corretto.key
+sudo curl -Lo /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
+sudo yum install -y java-21-amazon-corretto-devel
 
 # Force Java 21 as default
 sudo alternatives --set java /usr/lib/jvm/java-21-amazon-corretto.x86_64/bin/java 2>/dev/null || true
-echo "JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto" | sudo tee /etc/environment
+sudo alternatives --set javac /usr/lib/jvm/java-21-amazon-corretto.x86_64/bin/javac 2>/dev/null || true
+echo "JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto" | sudo tee -a /etc/environment
 export JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
 export PATH=$JAVA_HOME/bin:$PATH
+java -version
 
 # Step 3: Add Jenkins repo
 echo "[3/9] Adding Jenkins repository..."
@@ -74,7 +77,7 @@ sleep 90
 
 # Print result
 PUBLIC_IP=$(curl -s ifconfig.me)
-ADMIN_PASS=$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword 2>/dev/null || echo "Not available yet — check: sudo cat /var/lib/jenkins/secrets/initialAdminPassword")
+ADMIN_PASS=$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword 2>/dev/null || echo "Not ready yet — run: sudo cat /var/lib/jenkins/secrets/initialAdminPassword")
 
 echo ""
 echo "=============================="
