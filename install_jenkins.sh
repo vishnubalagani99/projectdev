@@ -3,7 +3,6 @@ echo "=============================="
 echo " Jenkins Auto-Install Script"
 echo " Amazon Linux 2 + Java 21"
 echo "=============================="
-
 set -e  # Exit on any error
 
 # Step 1: Update system
@@ -15,7 +14,6 @@ echo "[2/9] Installing Java 21 (Amazon Corretto)..."
 sudo rpm --import https://yum.corretto.aws/corretto.key
 sudo curl -Lo /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
 sudo yum install -y java-21-amazon-corretto-devel
-
 # Force Java 21 as default
 sudo alternatives --set java /usr/lib/jvm/java-21-amazon-corretto.x86_64/bin/java 2>/dev/null || true
 sudo alternatives --set javac /usr/lib/jvm/java-21-amazon-corretto.x86_64/bin/javac 2>/dev/null || true
@@ -52,12 +50,38 @@ echo "[7/9] Installing Git..."
 sudo yum install git -y
 git --version
 
-# Step 8: Install Maven
+# Step 8: Install Maven (direct from Apache — avoids the dead Fedora/EPEL repo)
 echo "[8/9] Installing Maven..."
-sudo wget -O /etc/yum.repos.d/epel-apache-maven.repo \
-  https://repos.fedorapeople.org/repos/dchen/apache-maven/epel-apache-maven.repo
-sudo sed -i s/\$releasever/6/g /etc/yum.repos.d/epel-apache-maven.repo
-sudo yum install -y apache-maven
+MAVEN_VERSION="3.9.9"
+MAVEN_URL="https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+
+# Fallback mirror in case the primary Apache CDN is unreachable
+MAVEN_URL_FALLBACK="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+
+cd /tmp
+if ! sudo wget -q "$MAVEN_URL" -O apache-maven.tar.gz; then
+    echo "Primary Maven download failed, trying fallback mirror..."
+    sudo wget -q "$MAVEN_URL_FALLBACK" -O apache-maven.tar.gz
+fi
+
+sudo rm -rf /opt/apache-maven-${MAVEN_VERSION} /opt/maven
+sudo tar -xzf apache-maven.tar.gz -C /opt
+sudo ln -sfn /opt/apache-maven-${MAVEN_VERSION} /opt/maven
+rm -f apache-maven.tar.gz
+
+# Persist Maven env vars for all future shells
+sudo tee /etc/profile.d/maven.sh > /dev/null <<'MVNENV'
+export M2_HOME=/opt/maven
+export MAVEN_HOME=/opt/maven
+export PATH=${M2_HOME}/bin:${PATH}
+MVNENV
+sudo chmod +x /etc/profile.d/maven.sh
+
+# Load it into THIS script's current shell too, so the version check below works
+export M2_HOME=/opt/maven
+export MAVEN_HOME=/opt/maven
+export PATH=${M2_HOME}/bin:${PATH}
+
 mvn -version
 
 # Step 9: Open port 8080 in firewall
